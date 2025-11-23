@@ -67,7 +67,7 @@ if ELEVEN_API_KEY:
 # Voice IDs for different personas (ElevenLabs voices)
 # Female voice for Priya, Male voice for Rajesh
 VOICE_IDS = {
-    "female": "LWFgMHXb8m0uANBUpzlq", #Saavi "21m00Tcm4TlvDq8ikWAM",  # Rachel - warm female voice
+    "female": "NeDTo4pprKj2ZwuNJceH", #Saavi "21m00Tcm4TlvDq8ikWAM",  # Rachel - warm female voice
     "male": "1wR0NchtHfKujrd8xFsX" #Pranav Shah  "29vD33N1CtxCmqQRPOHJ",     # Drew - male voice
 }
 
@@ -424,16 +424,76 @@ def handle_api_key_submit(api_key: str):
         )
 
 
+# Animated avatar CSS (pulsing circle animation)
+CUSTOM_CSS = """
+<style>
+.avatar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+.avatar-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+.avatar-blue {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+.avatar-red {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+}
+.avatar-circle.speaking::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(0.95); opacity: 0.7; }
+    50% { transform: scale(1.05); opacity: 0.3; }
+}
+.avatar-name {
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 18px;
+}
+.view-prompt-btn {
+    margin-top: 8px;
+    color: #667eea;
+    cursor: pointer;
+    font-size: 14px;
+}
+.view-prompt-btn:hover {
+    text-decoration: underline;
+}
+</style>
+"""
+
 # Build Gradio UI
 with gr.Blocks(title="AI Persona Conversation Simulator") as app:
+    gr.HTML(CUSTOM_CSS)
+
     gr.Markdown("""
     # 🎭 AI Persona Conversation Simulator
-    Two AI personas engage in autonomous conversation. Edit their prompts, then click **Start** to begin.
+    Two AI personas engage in autonomous voice conversation.
     """)
 
-    # API Key Section
-    with gr.Group(elem_classes=["api-section"]):
-        gr.Markdown("### 🔑 API Configuration")
+    # API Key Section (collapsed by default)
+    with gr.Accordion("🔑 API Configuration", open=False):
         with gr.Row():
             api_key_input = gr.Textbox(
                 label="Gemini API Key",
@@ -446,21 +506,30 @@ with gr.Blocks(title="AI Persona Conversation Simulator") as app:
             "✅ API Key loaded from environment" if model is not None else "⚠️ No API key configured. Enter your key above or create a .env file."
         )
 
+    # Persona avatars and controls
     with gr.Row():
-        # Persona A (Priya)
+        # Persona A (Priya) - Blue avatar
         with gr.Column():
-            gr.Markdown("### 👩‍💼 Persona A (Initiator)")
+            gr.HTML("""
+            <div class="avatar-container">
+                <div class="avatar-circle avatar-blue" id="avatar-a">👩‍💼</div>
+                <div class="avatar-name">Priya Sharma</div>
+                <div style="font-size: 12px; color: #666;">Loan Recovery Officer</div>
+            </div>
+            """)
             persona_a_name = gr.Textbox(
                 label="Name",
                 value=DEFAULT_PERSONA_A["name"],
-                interactive=True
+                interactive=True,
+                visible=False
             )
-            persona_a_prompt = gr.Textbox(
-                label="System Prompt",
-                value=DEFAULT_PERSONA_A["system_prompt"],
-                lines=10,
-                interactive=True
-            )
+            with gr.Accordion("📝 View/Edit System Prompt", open=False):
+                persona_a_prompt = gr.Textbox(
+                    label="System Prompt",
+                    value=DEFAULT_PERSONA_A["system_prompt"],
+                    lines=8,
+                    interactive=True
+                )
             persona_a_start = gr.Textbox(
                 label="Opening Message",
                 value=DEFAULT_PERSONA_A["start_message"],
@@ -468,23 +537,31 @@ with gr.Blocks(title="AI Persona Conversation Simulator") as app:
                 interactive=True
             )
 
-        # Persona B (Rajesh)
+        # Persona B (Rajesh) - Red/Pink avatar
         with gr.Column():
-            gr.Markdown("### 👨‍💼 Persona B (Responder)")
+            gr.HTML("""
+            <div class="avatar-container">
+                <div class="avatar-circle avatar-red" id="avatar-b">👨‍💼</div>
+                <div class="avatar-name">Rajesh Kumar</div>
+                <div style="font-size: 12px; color: #666;">Textile Business Owner</div>
+            </div>
+            """)
             persona_b_name = gr.Textbox(
                 label="Name",
                 value=DEFAULT_PERSONA_B["name"],
-                interactive=True
+                interactive=True,
+                visible=False
             )
-            persona_b_prompt = gr.Textbox(
-                label="System Prompt",
-                value=DEFAULT_PERSONA_B["system_prompt"],
-                lines=10,
-                interactive=True
-            )
+            with gr.Accordion("📝 View/Edit System Prompt", open=False):
+                persona_b_prompt = gr.Textbox(
+                    label="System Prompt",
+                    value=DEFAULT_PERSONA_B["system_prompt"],
+                    lines=8,
+                    interactive=True
+                )
 
     # Status bar
-    status = gr.Markdown("⚪ Ready to start", elem_classes=["status-bar"])
+    status = gr.Markdown("⚪ Ready to start")
 
     # Controls
     with gr.Row():
@@ -492,14 +569,14 @@ with gr.Blocks(title="AI Persona Conversation Simulator") as app:
             "▶️ Start Conversation",
             variant="primary",
             size="lg",
-            interactive=(model is not None)  # Disable if no API key
+            interactive=(model is not None)
         )
         stop_btn = gr.Button("⏹️ Stop Conversation", variant="stop", size="lg", interactive=False)
 
     # Chat display
     chatbot = gr.Chatbot(
         label="Conversation",
-        height=450,
+        height=400,
         layout="bubble"
     )
 
@@ -512,12 +589,7 @@ with gr.Blocks(title="AI Persona Conversation Simulator") as app:
 
     gr.Markdown("""
     ---
-    *Click on any message in the chat to replay its audio.*
-
-    **Tips:**
-    - Edit persona prompts before starting
-    - Conversation alternates automatically every 2 seconds
-    - Click Stop to end the conversation and edit prompts again
+    *Click on any message to replay its audio.*
     """)
 
     # Event handlers
