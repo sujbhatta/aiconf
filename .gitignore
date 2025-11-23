@@ -1,0 +1,24 @@
+# Environment and secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# Temp files
+*.tmp
+*.mp3
+nul
+
+# Claude
+.claude/
